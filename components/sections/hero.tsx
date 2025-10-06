@@ -1,8 +1,10 @@
-"use client"
+"use client";
 
-import { motion, useMotionValue, useTransform } from "framer-motion"
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { motion, useMotionValue, useTransform } from "framer-motion";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { FaWhatsapp } from "react-icons/fa6";
+import { IoCall } from "react-icons/io5";
 import {
   ArrowRight,
   Wrench,
@@ -11,16 +13,14 @@ import {
   Shield,
   Video,
   Droplets,
-  PhoneCall,
-  MessageCircle,
-} from "lucide-react"
-import { FaWhatsapp } from "react-icons/fa6";
-import { IoCall } from "react-icons/io5";
+} from "lucide-react";
 
 export default function Hero() {
-  const mouseX = useMotionValue(0)
-  const mouseY = useMotionValue(0)
-  const [activeServiceIndex, setActiveServiceIndex] = useState(0)
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const [activeServiceIndex, setActiveServiceIndex] = useState(0);
+  const [windowSize, setWindowSize] = useState({ width: 1, height: 1 });
+  const [isClient, setIsClient] = useState(false);
 
   const services = [
     { name: "Cleaning", icon: Droplets },
@@ -30,48 +30,69 @@ export default function Hero() {
     { name: "Fire Safety", icon: Shield },
     { name: "Security", icon: Shield },
     { name: "CCTV", icon: Video },
-  ]
+  ];
 
+  // ✅ Update window size and mark as client
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX.set(e.clientX)
-      mouseY.set(e.clientY)
-    }
-    window.addEventListener("mousemove", handleMouseMove)
-    return () => window.removeEventListener("mousemove", handleMouseMove)
-  }, [mouseX, mouseY])
+    setIsClient(true);
 
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX.set(e.clientX);
+      mouseY.set(e.clientY);
+    };
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    handleResize();
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [mouseX, mouseY]);
+
+  // ✅ Hook-safe transforms (always called)
+  const x1 = useTransform(mouseX, [0, windowSize.width], [-20, 20]);
+  const y1 = useTransform(mouseY, [0, windowSize.height], [-20, 20]);
+  const x2 = useTransform(mouseX, [0, windowSize.width], [20, -20]);
+  const y2 = useTransform(mouseY, [0, windowSize.height], [20, -20]);
+
+  // ✅ Auto-rotate service highlight
   useEffect(() => {
     const interval = setInterval(() => {
-      setActiveServiceIndex((prev) => (prev + 1) % services.length)
-    }, 2000)
-    return () => clearInterval(interval)
-  }, [services.length])
-
-  const x1 = useTransform(mouseX, [0, window.innerWidth], [-20, 20])
-  const y1 = useTransform(mouseY, [0, window.innerHeight], [-20, 20])
-  const x2 = useTransform(mouseX, [0, window.innerWidth], [20, -20])
-  const y2 = useTransform(mouseY, [0, window.innerHeight], [20, -20])
+      setActiveServiceIndex((prev) => (prev + 1) % services.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [services.length]);
 
   return (
     <section
       id="hero"
       className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#004AAD] via-[#0066E6] to-[#004AAD]"
     >
-      {/* Animated background blobs */}
-      <motion.div
-        style={{ x: x1, y: y1 }}
-        className="absolute top-20 left-20 w-64 h-64 bg-[#FFD43B] rounded-full opacity-20 blur-3xl"
-        animate={{ scale: [1, 1.2, 1], rotate: [0, 180, 360] }}
-        transition={{ duration: 8, repeat: Number.POSITIVE_INFINITY }}
-      />
-      <motion.div
-        style={{ x: x2, y: y2 }}
-        className="absolute bottom-20 right-20 w-96 h-96 bg-[#FFC107] rounded-full opacity-20 blur-3xl"
-        animate={{ scale: [1.2, 1, 1.2], rotate: [360, 180, 0] }}
-        transition={{ duration: 10, repeat: Number.POSITIVE_INFINITY }}
-      />
-
+      {/* ✅ Render motion only after client mounts */}
+      {isClient && (
+        <>
+          <motion.div
+            style={{ x: x1, y: y1 }}
+            className="absolute top-20 left-20 w-64 h-64 bg-[#FFD43B] rounded-full opacity-20 blur-3xl"
+            animate={{ scale: [1, 1.2, 1], rotate: [0, 180, 360] }}
+            transition={{ duration: 8, repeat: Infinity }}
+          />
+          <motion.div
+            style={{ x: x2, y: y2 }}
+            className="absolute bottom-20 right-20 w-96 h-96 bg-[#FFC107] rounded-full opacity-20 blur-3xl"
+            animate={{ scale: [1.2, 1, 1.2], rotate: [360, 180, 0] }}
+            transition={{ duration: 10, repeat: Infinity }}
+          />
+        </>
+      )}
       {/* Floating shapes */}
       {[...Array(12)].map((_, i) => (
         <motion.div
